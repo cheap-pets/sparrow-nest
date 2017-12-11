@@ -1,0 +1,33 @@
+{
+  "name": "sparrow-nest",
+  "version": "0.1.0",
+  "description": "A Microservices Framework for REST APIs",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">7.9.0"
+  },
+  "scripts": {
+    "test": "node test/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cheap-pets/sparrow-nest.git"
+  },
+  "author": "scrollbar-ww",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/cheap-pets/sparrow-nest/issues"
+  },
+  "homepage": "https://github.com/cheap-pets/sparrow-nest#readme",
+  "devDependencies": {},
+  "dependencies": {
+    "biguint-format": "^1.0.0",
+    "flake-idgen": "^1.1.0",
+    "henhouse": "^1.0.3",
+    "request": "^2.83.0",
+    "request-promise-native": "^1.0.5",
+    "sequelize": "^4.23.1",
+    "sqlite3": "^3.1.13",
+    "strip-json-comments": "^2.0.1"
+  }
+}
