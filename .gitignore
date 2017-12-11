@@ -56,7 +56,9 @@ typings/
 
 # dotenv environment variables file
 .env
-package-lock.json
 
-# Mac OS file
+# Mac OS files
 .DS_Store
+
+# VSCode files
+.vscode
