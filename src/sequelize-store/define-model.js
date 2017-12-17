@@ -1,6 +1,7 @@
-const Types = require('../constant/data-types')
+const Types = require('../constants/data-types')
 const TypeMapping = require('./type-mapping')
-const { TableNameMode, FieldNameMode } = require('../constant/db-name-modes')
+const TableNameMode = require('../constants/table-name-modes')
+const FieldNameMode = require('../constants/field-name-modes')
 const camelCase2Underline = require('../utils/camel-case-to-underline')
 
 function convert2SequelizeType (localType) {

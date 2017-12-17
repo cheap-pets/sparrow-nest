@@ -1,5 +1,5 @@
 const { isArray } = require('../utils/check-type')
-const HttpMethods = require('../constant/http-methods')
+const HttpMethods = require('../constants/http-methods')
 
 function attributesQuery2Array (query) {
   const result = []
