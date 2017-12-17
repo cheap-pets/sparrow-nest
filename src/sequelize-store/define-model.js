@@ -1,10 +1,7 @@
-const Types = require('../utils/data-types')
+const Types = require('../constant/data-types')
 const TypeMapping = require('./type-mapping')
-const {
-  TableNameMode,
-  FieldNameMode,
-  camelCase2Underline
-} = require('../utils/name-mode')
+const { TableNameMode, FieldNameMode } = require('../constant/db-name-modes')
+const camelCase2Underline = require('../utils/camel-case-to-underline')
 
 function convert2SequelizeType (localType) {
   return TypeMapping[localType].Sequelize
@@ -28,7 +25,6 @@ function defineModel (sequelize, name, attributes, options) {
   )
 
   const attributesOptions = {}
-  let primaryKeyAttribute
   Object.keys(attributes).forEach(attr => {
     const v = attributes[attr]
     const attrOptions = typeof v === 'string' ? { type: v } : v
@@ -44,7 +40,7 @@ function defineModel (sequelize, name, attributes, options) {
       attrOptions.type === Types.STRID
     ) {
       attrOptions.primaryKey = true
-      primaryKeyAttribute = attr
+      // it can be find in model.primaryKeyField
     }
     // field type
     attrOptions.rawType = attrOptions.type
@@ -62,8 +58,6 @@ function defineModel (sequelize, name, attributes, options) {
   })
 
   const Model = sequelize.define(name, attributesOptions, defineOptions)
-  Model.modelName = name
-  Model.primaryKeyAttribute = primaryKeyAttribute
   Model.attributesOptions = attributesOptions
   return Model
 }

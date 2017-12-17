@@ -1,49 +1,47 @@
-const Sequelize = require('sequelize')
-const defineSequelizeModel = require('./sequelize/define-model')
+const {
+  DataTypes,
+  StoreTypes,
+  TableNameMode,
+  FieldNameMode,
+  HttpMethods
+} = require('./constants')
+
+const SequelizeStore = require('./sequelize-store/index')
+
 const resolve = require('./utils/resolve-path')
-const Types = require('./utils/data-types')
-
 const { HttpService } = require('henhouse')
-const { Methods, defineMethods } = require('./http-service/methods')
-const { TableNameMode, FieldNameMode } = require('./utils/name-mode')
 
-function getSequelizeInstance (v) {
-  return v instanceof Sequelize ? v : new Sequelize(v)
+function getDefaultModelPath (modelName) {
+  return modelName.replace(/([A-Z])/g, '-$1').toLowerCase() + 's'
 }
 
 class Nest {
   constructor (options) {
+    this.stores = {}
+    this.registerStores(options.stores)
     if (options.sequelize) {
-      this.sequelize = getSequelizeInstance(options.sequelize)
-    }[
-      'path',
-      'tableNameMode',
-      'fieldNameMode'
-    ].forEach(n => {
-      options[n] && (this[n] = options[n])
-    })
+      this.stores.sequelize = new SequelizeStore(this, options.sequelize)
+      this.defaultStore = this.stores.sequelize
+    }
+    options.path && (this.path = options.path)
     this.httpService = new HttpService()
+    this.modelPaths = {}
     this.models = {}
   }
-  defineModel (name, attributes, options) {
-    const sequelize = options.sequelize
-      ? getSequelizeInstance(options.sequelize)
-      : this.sequelize
-    options = Object.assign(
-      {
-        tableNameMode: this.tableNameMode,
-        fieldNameMode: this.fieldNameMode
-      },
-      options
-    )
-    const Model = defineSequelizeModel(sequelize, name, attributes, options)
-    Model.path = options.path || name + 's'
-    Model.idGenerator = options.idGenerator
-    this.models[name] = Model
-    if (options.methods !== false || options.methods === undefined) {
-      defineMethods.call(this, name, options.methods)
+  registerStores (stores) {
+    if (stores.type && stores.options) {
+
+    } else {
+      for (let s in stores) {
+      }
     }
-    return Model
+  }
+  define (modelName, attributes, options) {
+    options = options || {}
+    this.modelPaths[modelName] = options.path || getDefaultModelPath(modelName)
+    const store = options.store || this.defaultStore
+    switch (store) {
+    }
   }
   listen (port) {
     this.httpService.listen(port)
@@ -55,39 +53,31 @@ class Nest {
   }
 }
 /**
- * @name get|get1|put|post|patch|delete|batchPut|batchPatch
+ * @name get|put|post|patch|delete
  * @memberof module: sparrow-nest.prototype
  * @param { String } model name or path
  * @param { Function } callback route callback
  * @returns { Nest }
  */
-Object.keys(Methods).forEach(method => {
-  Nest.prototype[method] = function (path, nestKoaMiddleware) {
+HttpMethods.forEach(method => {
+  Nest.prototype[method] = function (path, asyncProcedure) {
     const Model = this.models[path]
-    let parseId = false
-    if (Model) {
-      path = Model.path
-      if (['put', 'patch', 'delete', 'get1'].indexOf(method) >= 0) {
-        path += '/:id'
-        parseId = true
-      }
-      path = (this.path || '') + '/' + path
-    }
-    path = resolve(path)
-    this.httpService[Methods[method]](path, async (ctx, next) => {
-      await nestKoaMiddleware(
-        ctx,
-        next,
-        Model,
-        parseId ? ctx.params.id : undefined
-      )
+    path = resolve((this.path || '') + '/' + (Model ? Model.path : path))
+    this.httpService[method](path, async (ctx, next) => {
+      await asyncProcedure(ctx, next, Model)
     })
+    if (Model && ['get', 'put', 'patch', 'delete'].indexOf(method) >= 0) {
+      this.httpService[method](path + '/:id', async (ctx, next) => {
+        await asyncProcedure(ctx, next, Model, ctx.params.id)
+      })
+    }
     return this
   }
 })
 
+Nest.DataTypes = DataTypes
+Nest.StoreTypes = StoreTypes
 Nest.TableNameMode = TableNameMode
 Nest.FieldNameMode = FieldNameMode
-Nest.DataTypes = Types
 
 module.exports = Nest

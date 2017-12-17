@@ -4,7 +4,7 @@
   "description": "A Microservices Framework for REST APIs",
   "main": "src/index.js",
   "engines": {
-    "node": ">7.9.0"
+    "node": ">8.9.0"
   },
   "scripts": {
     "test": "node test/index.js"

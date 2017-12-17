@@ -20,7 +20,7 @@ function idGen (count) {
 }
 
 const myService = new Nest({
-  path: 'tenant-service',
+  path: 'my-service',
   tableNameMode: Nest.TableNameMode.UNDERLINE,
   fieldNameMode: Nest.FieldNameMode.UNDERLINE,
   sequelize: {
@@ -42,7 +42,7 @@ myService.sequelize
     console.error('Connection is bad.', err)
   })
 */
-myService.defineModel(
+const tenant = myService.define(
   'tenant',
   {
     id: Types.ID,
@@ -59,30 +59,172 @@ myService.defineModel(
   }
 )
 
+const user = myService.define(
+  'user',
+  {
+    id: Types.ID,
+    phoneNumber: Types.INT,
+    loginId: Types.STRING,
+    userName: Types.STRING,
+    isRemoved: Types.BOOLEAN,
+    createdAt: Types.DATE,
+    updatedAt: Types.DATE
+  },
+  {
+    idGenerator: idGen
+  }
+)
+
+const tenantUser = myService.define(
+  'tenantUser',
+  {
+    id: Types.ID,
+    tenantId: {
+      type: Types.INTEGER,
+      references: {
+        model: 'tenant',
+        key: 'id'
+      }
+    },
+    userId: {
+      type: Types.INTEGER,
+      references: {
+        model: 'user',
+        key: 'id'
+      }
+    },
+    userAlias: Types.STRING,
+    isAdmin: Types.BOOLEAN,
+    isDisabled: Types.BOOLEAN,
+    isRemoved: Types.BOOLEAN,
+    createdAt: Types.DATE,
+    updatedAt: Types.DATE
+  },
+  {
+    idGenerator: idGen
+  }
+)
+tenantUser.belongsTo(tenant)
+tenantUser.belongsTo(user)
+
 myService.listen(3000)
 
-function testGet () {
-  request('http://localhost:3000/tenant-service/tenants').then(data => {
-    console.log('ok', data)
-  }).catch(err => {
-    console.error('bad', err)
-  })
-}
-
-function testPost () {
-  request({
+async function testPostTenant () {
+  const ret = await request({
     method: 'POST',
-    url: 'http://localhost:3000/tenant-service/tenants',
+    url: 'http://localhost:3000/my-service/tenants',
     form: {
       tenantName: 'xx',
       shortName: 'x'
     }
-  }).then(data => {
-    console.log('ok', data)
-  }).catch(err => {
-    console.error('bad', err)
+  })
+  return ret
+}
+
+async function testGetTenants () {
+  const ret = await request('http://localhost:3000/my-service/tenants', { json: true })
+  return ret
+}
+
+async function testPatchTenant (id) {
+  await request({
+    method: 'PATCH',
+    url: 'http://localhost:3000/my-service/tenants/' + id,
+    form: {
+      tenantName: 'yy'
+    }
   })
 }
 
-testGet()
-testPost()
+async function testGetTenantById (id) {
+  const ret = await request('http://localhost:3000/my-service/tenants/' + id, { json: true })
+  return ret
+}
+
+async function testPostUser () {
+  const ret = await request({
+    method: 'POST',
+    url: 'http://localhost:3000/my-service/users',
+    form: {
+      userName: '张三',
+      phoneNumber: 18611027530
+    }
+  })
+  return ret
+}
+
+async function testGetUsers () {
+  const ret = await request('http://localhost:3000/my-service/users', { json: true })
+  return ret
+}
+
+async function testPatchUser (id) {
+  await request({
+    method: 'PATCH',
+    url: 'http://localhost:3000/my-service/users/' + id,
+    form: {
+      name: '李四'
+    }
+  })
+}
+
+async function testGetUserById (id) {
+  const ret = await request('http://localhost:3000/my-service/users/' + id, { json: true })
+  return ret
+}
+
+async function testPostTenantUser (tenantId, userId) {
+  const ret = await request({
+    method: 'POST',
+    url: 'http://localhost:3000/my-service/tenant-users',
+    form: {
+      tenantId,
+      userId,
+      userAlias: '大张三'
+    }
+  })
+  return ret
+}
+
+async function testGetTenantUsers () {
+  const ret = await request('http://localhost:3000/my-service/tenant-users?fields=*,user(id, userName)', { json: true })
+  return ret
+}
+
+async function testPatchTenantUser (id) {
+  await request({
+    method: 'PATCH',
+    url: 'http://localhost:3000/my-service/tenant-users/' + id,
+    form: {
+      userAlias: '大李四'
+    }
+  })
+}
+
+async function testGetTenantUserById (id) {
+  const ret = await request('http://localhost:3000/my-service/tenant-users/' + id, { json: true })
+  return ret
+}
+
+async function test () {
+  try {
+    const tenantId = await testPostTenant()
+    console.info('[info]', '租户数量', (await testGetTenants()).length)
+    await testPatchTenant(tenantId)
+    console.info('[info]', '租户名称', (await testGetTenantById(tenantId)).userName)
+
+    const userId = await testPostUser()
+    console.info('[info]', '用户数量', (await testGetUsers()).length)
+    await testPatchUser(userId)
+    console.info('[info]', '用户名称', (await testGetUserById(userId)).userName)
+
+    const tenantUserId = await testPostTenantUser(tenantId, userId)
+    console.info('[info]', '租户用户数量', (await testGetTenantUsers(tenantId)).length)
+    await testPatchTenantUser(tenantUserId)
+    const v = (await testGetTenantUserById(tenantUserId))
+    console.info('[info]', '备注名称', v.userAlias)
+  } catch (err) {
+    console.error('[error]', err)
+  }
+}
+test()
